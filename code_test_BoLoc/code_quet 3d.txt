@@ -1,0 +1,115 @@
+#include <AFMotor.h>
+#include <Servo.h>
+
+const int trig = 16;
+const int echo = 17;
+long duration;
+int distance; 
+
+Servo servo1;
+Servo servo2;
+AF_DCMotor motor3(3); 
+AF_DCMotor motor4(4);
+
+String inStr;
+int pos;
+int pot;
+int b=5;
+int delay_t = 50;
+
+
+void setup() {  
+  Serial.begin(115200);           // mở cổng Serial monitor 9600 bps 
+  //Serial.println("Hello my racing");
+  pinMode(trig,OUTPUT);   // chân trig sẽ phát tín hiệu
+  pinMode(echo,INPUT);
+  servo1.attach(10);
+  servo2.attach(9);
+  delay(5000);
+  servo1.write(0);
+  delay(100);
+  servo2.write(90);
+  delay(100);
+
+  pinMode(6,OUTPUT);
+}  
+
+int kc(){//----------------------------------------
+  digitalWrite(trig, LOW); 
+  delayMicroseconds(2);
+  // Sets the trigPin on HIGH state for 10 micro seconds
+  digitalWrite(trig, HIGH); 
+  delayMicroseconds(10);
+  digitalWrite(trig, LOW);
+  duration = pulseIn(echo, HIGH);
+  distance= duration*0.034/2;
+  return distance;
+} 
+void loop() {  
+  //Serial.print("tien");  
+//  motor3.setSpeed(150);
+//  motor4.setSpeed(150);   
+//  motor3.run(FORWARD);      // động cơ tiến 
+//  motor4.run(FORWARD);
+//
+//  delay(1000);
+//
+//  motor3.run(RELEASE);
+//  motor4.run(RELEASE);
+//  delay(500);
+  up();
+  if(Serial.available()){
+    inStr = Serial.readString();
+    if(inStr=="quet"){
+      digitalWrite(6,HIGH);
+      up();
+      Serial.println("end");
+      digitalWrite(6,LOW);
+    }
+  }
+}
+
+//---------------------------------------------------up
+void up(){
+  for(pos=90;pos<180;pos+=2){
+    servo2.write(pos);delay(30);
+    if(pos>120){        b=10;  delay_t = 100;
+    }else if(pos>160){  b=20; delay_t = 150;}
+
+    for(pot=0;pot<180;pot+=b){
+      servo1.write(pot);
+      Serial.println(String(pos-90)+'-'+String(pot)+'-'+String(30));
+      delay(delay_t);
+    }
+    pos+=2;
+    servo2.write(pos);  delay(100);
+        
+    for(pot=180;pot>0;pot-=b){
+      servo1.write(pot);
+      Serial.println(String(pos-90)+'-'+String(pot)+'-'+String(30));
+      delay(delay_t);
+    }
+  }
+}
+
+//---------------------------------------------------down
+void down(){
+  for(pos=180;pos>90;pos--){
+    servo2.write(pos);  delay(30);
+    if(pos<160){        b=3;  delay_t = 100;
+    }else if(pos<120){  b=1;  delay_t = 50;}
+        
+    for(pot=0;pot<180;pot+=b){
+      servo1.write(pot);
+      delay(delay_t);
+    }
+    pos--;
+    servo2.write(pos);  delay(100);
+    for(pot=180;pot>0;pot-=b){
+      servo1.write(pot);
+      delay(delay_t);
+    }
+  }
+}
+
+//--------------------------------------------------sendData

@@ -1,0 +1,75 @@
+#include "PinChangeInt.h"
+#include <PID_v1.h>  
+#include <AFMotor.h>
+#include <SimpleKalmanFilter.h>
+SimpleKalmanFilter bo_loc(2, 2, 0.001);
+float u_kalman;
+
+double kp = 1 , ki = 1 , kd = 0.01 ,input = 0, output = 0, setpoint = 0;   // modify kp, ki and kd for optimal performance
+long temp;
+volatile long encoderPos = 0;
+AF_DCMotor motor3(3);
+
+PID myPID(&input, &output, &setpoint, kp, ki, kd, DIRECT);  // if motor will only run at full speed try 'REVERSE' instead of 'DIRECT'
+
+int in3 = 8;
+int in4 = 9;
+
+int encoder_pin1 = 2;  // The pin the encoder is connected 
+          
+unsigned int rpm1;     // rpm reading
+
+volatile byte pulses1 = 0;  // number of pulses
+unsigned long timeold = 0;
+unsigned int pulsesperturn = 20;
+#define MAX_SPEED 255 //từ 0-255
+#define MIN_SPEED 0 
+
+void counter1(){  pulses1++;  }
+
+void setup(){
+  Serial.begin(9600);
+  pinMode(in3,OUTPUT);
+  pinMode(in4,OUTPUT);
+  attachInterrupt(0, counter1, FALLING);
+  myPID.SetMode(AUTOMATIC);
+  myPID.SetSampleTime(1);
+  myPID.SetOutputLimits(-255, 255);
+  setpoint = 100;
+}
+
+void loop(){
+  motor_1_Tien(100);
+  tinh_rpm();
+  u_kalman = bo_loc.updateEstimate(rpm1);
+  Serial.println(rpm1);
+  //Serial.println(u_kalman);
+  input= rpm1;
+//
+  myPID.Compute();
+  //Serial.print("pid"); Serial.println(output);
+  //motor_1_Tien(output+rpm1);
+  delay(100);
+}
+
+void dongCo(float output){
+  analogWrite(in3, LOW);
+  digitalWrite(in4, output);
+}
+
+void tinh_rpm(){
+  if (millis() - timeold >= 1000){
+    detachInterrupt(0);
+    rpm1 = (60 * 1000 / pulsesperturn )/ (millis() - timeold)* pulses1;
+    timeold = millis();
+   
+    pulses1 = 0;
+    attachInterrupt(0, counter1, FALLING);
+  }
+}
+
+void motor_1_Tien(int speed) { //speed: từ 0 - MAX_SPEED
+  speed = constrain(speed, MIN_SPEED, MAX_SPEED);
+  digitalWrite(in3, HIGH);// chân này không có PWM
+  analogWrite(in4, 255 - speed);
+}

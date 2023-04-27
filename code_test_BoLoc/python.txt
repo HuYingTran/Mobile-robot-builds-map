@@ -1,0 +1,65 @@
+import openpyxl
+import time
+import serial
+import matplotlib.pyplot as plt
+from mpl_toolkits import mplot3d
+import numpy as np
+
+# ------------------------ tao bieu do
+fig = plt.figure(figsize = (10, 7))
+
+ax = fig.add_subplot(111, projection='3d')
+ax.set_xlim(-100, 100)
+ax.set_ylim(-50, 150)
+ax.set_zlim(-50, 150)
+#fig.set_size_inches(8, 8)
+ax.grid(False)
+
+# --------------------- excel
+wb = openpyxl.load_workbook('./Book1.xlsx')
+sheet_copy = wb.copy_worksheet(wb['Sheet1'])
+sheet = wb['Sheet1 Copy']
+
+# ---------- khai bao bien
+pi = np.pi/180
+i = 0
+step =0
+
+# --------- tao cong arduino
+arduino = serial.Serial('COM3', 115200)
+time.sleep(2)
+s = str("quet")
+arduino.write(s.encode())
+print("bd")
+
+
+while True:
+    while(arduino.inWaiting()==0):
+        pass
+    ardStr = arduino.readline().decode('utf-8').rstrip()
+    if ardStr == "end":
+        wb.save('./Book1.xlsx')
+        break
+    ardList = ardStr.split("-")
+    pos = float(ardList[0]) * pi
+    pot = float(ardList[1]) * pi
+    kc = float(ardList[2])
+    ardNum = [np.cos(pos)*np.cos(pot)*kc, np.cos(pos)*np.sin(pot)*kc, kc*np.sin(pos)]
+    ax.plot(ardNum[0], ardNum[1], ardNum[2],marker=".")
+    #plt.draw()
+    step = step+1
+    if step == 10:
+        plt.pause(0.001)
+        step=0
+
+
+    print(ardNum)
+    print(ardNum[0])
+    i=i+1
+    sheet["A" + str(i)] = ardNum[0]
+    sheet["B" + str(i)] = ardNum[1]
+    sheet["C" + str(i)] = ardNum[2]
+
+
+
+print("xong")

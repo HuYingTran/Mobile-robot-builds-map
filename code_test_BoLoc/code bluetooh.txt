@@ -1,0 +1,30 @@
+inf = instrhwinfo('Bluetooth')
+
+inf.RemoteIDs
+
+inf.RemoteNames
+
+bt = Bluetooth('btspp://002106BE98C2',1);
+
+fopen(bt);
+
+#include<SoftwareSerial.h>
+SoftwareSerial mybluetooth(10,11); //TX , RX
+int led = 13;
+
+void setup(){
+  pinMode(led,OUTPUT);
+  mybluetooth.begin(9600);
+}
+
+void loop(){
+  if(mybluetooth.available()>0){
+    char letra = mybluetooth.read();
+    if(letra == 'E'){
+      digitalWrite(led,HIGH);
+    }else if(letra == 'A'){
+      digitalWrite(led,LOW);
+    }
+  }
+  mybluetooth.write("huynh");
+}
